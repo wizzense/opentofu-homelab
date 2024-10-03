@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"hyperv_machine_instance","Source":"./tofu-vm-primarycontrolnode-WinServer2025.tf","Dir":"tofu-vm-primarycontrolnode-WinServer2025.tf"},{"Key":"hyperv_network_switch","Source":"./tofu-vm-primarycontrolnode-vSwitch.tf","Dir":"tofu-vm-primarycontrolnode-vSwitch.tf"}]}

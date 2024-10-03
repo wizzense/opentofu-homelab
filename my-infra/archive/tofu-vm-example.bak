@@ -1,0 +1,88 @@
+# Declare the data source for the bootstrap archive
+data "archive_file" "bootstrap" {
+  type        = "zip"
+  source_dir  = "C:\\Users\\alexa\\OneDrive\\0. Lab\\opentofu\\my-infra\\bootstrap"
+  output_path = "bootstrap.zip"
+}
+
+# Declare the data source for the Win11_23H2_English_x64v2 archive
+data "archive_file" "Win11_23H2_English_x64v2" {
+  type        = "zip"
+  source_dir  = "E:\\Data\\"  # Ensure this directory exists
+  output_path = "E:\\Data\\Win11_23H2_English_x64v2.zip"  # The output ZIP file path
+}
+
+# Declare the hyperv_iso_image resource for the Win11_23H2_English_x64v2 ISO
+resource "hyperv_iso_image" "Win11_23H2_English_x64v2" {
+  volume_name               = "WIN11_23H2"  # All uppercase, using an underscore
+  source_zip_file_path      = data.archive_file.Win11_23H2_English_x64v2.output_path
+  source_zip_file_path_hash = data.archive_file.Win11_23H2_English_x64v2.output_sha
+  destination_iso_file_path = "E:\\Data\\Win11_23H2_English_x64v2.iso"
+  iso_media_type            = "dvdplusrw_duallayer"
+  iso_file_system_type      = "unknown"
+}
+
+# Declare the hyperv_vhd resource for the PrimaryControlNode VHD
+resource "hyperv_vhd" "PrimaryControlNode-vhd" {
+  path = "C:\\HyperV\\VMs\\PrimaryControlNode\\PrimaryControlNode.vhdx"
+  size = 60737421312  # Corrected size to be divisible by 4096
+}
+
+# Declare the hyperv_network_switch resource
+resource "hyperv_network_switch" "Lan" {
+  name            = "DMZ"
+  allow_management_os = true
+  switch_type     = "Internal"
+  # net_adapter_names = ["LAN"] If you're configuring an internal switch, you should not specify NetAdapterNames in your Terraform configuration.
+}
+
+# Declare the hyperv_machine_instance resource for PrimaryControlNode
+resource "hyperv_machine_instance" "PrimaryControlNode" {
+  name                   = "PrimaryControlNode"
+  generation             = 2
+  dynamic_memory         = true  # Enable dynamic memory
+  memory_startup_bytes   = 2147483648 # 2 GB
+  memory_maximum_bytes   = 4294967296 # 4 GB
+  processor_count        = 2
+  automatic_critical_error_action = "Pause"
+  automatic_critical_error_action_timeout = 30
+  automatic_start_action  = "StartIfRunning"
+  automatic_start_delay   = 0
+  automatic_stop_action   = "Save"
+  checkpoint_type         = "Production"
+  guest_controlled_cache_types = false
+  high_memory_mapped_io_space = 536870912
+  low_memory_mapped_io_space = 134217728
+  smart_paging_file_path  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+  snapshot_file_location  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+  state                   = "Running"
+  wait_for_ips_poll_period = 5
+  wait_for_ips_timeout    = 300
+  wait_for_state_poll_period = 2
+  wait_for_state_timeout  = 120
+
+  # Configure network adaptors
+  network_adaptors {
+    name           = "wan"
+    switch_name    = hyperv_network_switch.Lan.name
+    management_os  = false
+    is_legacy      = false
+    dynamic_mac_address = true
+  }
+
+  # Configure DVD drives
+  dvd_drives {
+    controller_number   = "0"
+    controller_location = "1"
+    path                = hyperv_iso_image.Win11_23H2_English_x64v2.destination_iso_file_path  # Corrected reference
+  }
+
+  # Configure hard disk drives
+  hard_disk_drives {
+    controller_type                 = "Scsi"
+    controller_number               = "0"
+    controller_location             = "0"
+    path                            = hyperv_vhd.PrimaryControlNode-vhd.path
+    disk_number                     = 4294967295
+  }
+}

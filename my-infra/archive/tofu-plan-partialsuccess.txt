@@ -1,0 +1,80 @@
+PS C:\Users\alexa\OneDrive\0. Lab\opentofu\my-infra> tofu plan
+data.archive_file.bootstrap: Reading...
+
+OpenTofu used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+OpenTofu planned the following actions, but then encountered a problem:
+
+  # hyperv_machine_instance.PrimaryControlNode will be created
+  + resource "hyperv_machine_instance" "PrimaryControlNode" {
+      + automatic_critical_error_action         = "Pause"
+      + automatic_critical_error_action_timeout = 30
+      + automatic_start_action                  = "StartIfRunning"
+      + automatic_start_delay                   = 0
+      + automatic_stop_action                   = "Save"
+      + checkpoint_type                         = "Production"
+      + dynamic_memory                          = true
+      + generation                              = 2
+      + guest_controlled_cache_types            = false
+      + high_memory_mapped_io_space             = 536870912
+      + id                                      = (known after apply)
+      + lock_on_disconnect                      = "Off"
+      + low_memory_mapped_io_space              = 134217728
+      + memory_maximum_bytes                    = 2147483648
+      + memory_minimum_bytes                    = 536870912
+      + memory_startup_bytes                    = 2147483648
+      + name                                    = "PrimaryControlNode"
+      + path                                    = (known after apply)
+      + processor_count                         = 2
+      + smart_paging_file_path                  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+      + snapshot_file_location                  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+      + state                                   = "Running"
+      + static_memory                           = false
+      + wait_for_ips_poll_period                = 5
+      + wait_for_ips_timeout                    = 300
+      + wait_for_state_poll_period              = 2
+      + wait_for_state_timeout                  = 120
+    }
+
+  # hyperv_network_switch.Lan will be created
+  + resource "hyperv_network_switch" "Lan" {
+      + allow_management_os                     = true
+      + default_flow_minimum_bandwidth_absolute = 0
+      + default_flow_minimum_bandwidth_weight   = 0
+      + default_queue_vmmq_enabled              = false
+      + default_queue_vmmq_queue_pairs          = 16
+      + default_queue_vrss_enabled              = false
+      + enable_embedded_teaming                 = false
+      + enable_iov                              = false
+      + enable_packet_direct                    = false
+      + id                                      = (known after apply)
+      + minimum_bandwidth_mode                  = "None"
+      + name                                    = "DMZ"
+      + net_adapter_names                       = [
+          + "LAN",
+        ]
+      + switch_type                             = "Internal"
+    }
+
+  # hyperv_vhd.PrimaryControlNode-vhd will be created
+  + resource "hyperv_vhd" "PrimaryControlNode-vhd" {
+      + block_size           = (known after apply)
+      + exists               = (known after apply)
+      + id                   = (known after apply)
+      + logical_sector_size  = (known after apply)
+      + path                 = "A:\\PrimaryControlNode\\PrimaryControlNode.vhdx"
+      + physical_sector_size = (known after apply)
+      + size                 = 60737421312
+      + vhd_type             = "Dynamic"
+    }
+
+Plan: 3 to add, 0 to change, 0 to destroy.
+╷
+│ Error: Archive creation error
+│
+│   with data.archive_file.bootstrap,
+│   on tofu-vm-example.tf line 127, in data "archive_file" "bootstrap":
+│  127: data "archive_file" "bootstrap" {
+│
+│ error creating archive: error archiving directory: could not archive missing directory: bootstrap

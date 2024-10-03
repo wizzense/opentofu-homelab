@@ -1,0 +1,15 @@
+resource "hyperv" "my_vm" {
+  name              = "MyFirstVM"
+  generation        = 2
+  memory_mb         = 2048
+  virtual_processor = 2
+  
+  disk {
+    size_gb   = 20
+    vhdx_path = "C:/hyperv_disks/myfirstvm.vhdx"
+  }
+
+  network_interface {
+    name = "Default Switch"  # Replace with your actual switch name
+  }
+}

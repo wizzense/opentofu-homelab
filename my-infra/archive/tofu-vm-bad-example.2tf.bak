@@ -1,0 +1,149 @@
+# Declare the data source for the bootstrap archive
+data "archive_file" "bootstrap" {
+  type        = "zip"
+  source_dir  = "C:\\Users\\alexa\\OneDrive\\0. Lab\\opentofu\\my-infra\\bootstrap"
+  output_path = "bootstrap.zip"
+}
+
+resource "hyperv_iso_image" "Win11_23H2_English_x64v2" {
+  volume_name               = "WIN11_23H2"  # All uppercase, using an underscore
+  source_zip_file_path      = data.archive_file.Win11_23H2_English_x64v2.output_path
+  source_zip_file_path_hash = data.archive_file.Win11_23H2_English_x64v2.output_sha
+  destination_iso_file_path = "E:\\Data\\Win11_23H2_English_x64v2.iso"
+  iso_media_type            = "dvdplusrw_duallayer"
+  iso_file_system_type      = "unknown"
+}
+
+
+# Declare the data source for the Win11_23H2_English_x64v2 archive
+data "archive_file" "Win11_23H2_English_x64v2" {
+  type        = "zip"
+  source_dir  = "E:\\Data\\Win11_23H2_English_x64v2"  # Ensure this directory exists
+  output_path = "E:\\Data\\Win11_23H2_English_x64v2.zip"  # The output ZIP file path
+}
+
+# Declare the hyperv_vhd resource for the PrimaryControlNode VHD
+resource "hyperv_vhd" "PrimaryControlNode-vhd" {
+  path = "A:\\PrimaryControlNode\\PrimaryControlNode.vhdx"
+  size = 60737421312  # Corrected size to be divisible by 4096
+}
+
+# Declare the hyperv_network_switch resource
+resource "hyperv_network_switch" "Lan" {
+  name            = "DMZ"
+  allow_management_os = true
+  switch_type     = "Internal"
+  net_adapter_names = ["LAN"]
+}
+
+# Declare the hyperv_machine_instance resource for PrimaryControlNode
+resource "hyperv_machine_instance" "PrimaryControlNode" {
+  name                   = "PrimaryControlNode"
+  generation             = 2
+  dynamic_memory         = true  # Enable dynamic memory
+  memory_startup_bytes   = 2147483648 # 2 GB
+  memory_maximum_bytes   = 4294967296 # 4 GB
+  processor_count        = 2
+  automatic_critical_error_action = "Pause"
+  automatic_critical_error_action_timeout = 30
+  automatic_start_action  = "StartIfRunning"
+  automatic_start_delay   = 0
+  automatic_stop_action   = "Save"
+  checkpoint_type         = "Production"
+  guest_controlled_cache_types = false
+  high_memory_mapped_io_space = 536870912
+  low_memory_mapped_io_space = 134217728
+  smart_paging_file_path  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+  snapshot_file_location  = "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V"
+  state                   = "Running"
+  wait_for_ips_poll_period = 5
+  wait_for_ips_timeout    = 300
+  wait_for_state_poll_period = 2
+  wait_for_state_timeout  = 120
+
+  # Configure network adaptors
+  network_adaptors {
+    name           = "wan"
+    switch_name    = hyperv_network_switch.Lan.name
+    management_os  = false
+    is_legacy      = false
+    dynamic_mac_address = true
+  }
+
+  # Configure DVD drives
+dvd_drives {
+  controller_number   = "0"
+  controller_location = "1"
+  path                = hyperv_iso_image.Win11_23H2_English_x64v2.destination_iso_file_path  # Updated reference
+}
+
+  # Configure hard disk drives
+  hard_disk_drives {
+    controller_type                 = "Scsi"
+    controller_number               = "0"
+    controller_location             = "0"
+    path                            = hyperv_vhd.PrimaryControlNode-vhd.path
+    disk_number                     = 4294967295
+  }
+}
+
+
+PS C:\Users\alexa\OneDrive\0. Lab\opentofu\my-infra> tofu plan
+data.archive_file.bootstrap: Reading...
+data.archive_file.Win11_23H2_English_x64v2: Reading...
+
+OpenTofu used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+OpenTofu planned the following actions, but then encountered a problem:
+
+  # hyperv_network_switch.Lan will be created
+  + resource "hyperv_network_switch" "Lan" {
+      + allow_management_os                     = true
+      + default_flow_minimum_bandwidth_absolute = 0
+      + default_flow_minimum_bandwidth_weight   = 0
+      + default_queue_vmmq_enabled              = false
+      + default_queue_vmmq_queue_pairs          = 16
+      + default_queue_vrss_enabled              = false
+      + enable_embedded_teaming                 = false
+      + enable_iov                              = false
+      + enable_packet_direct                    = false
+      + id                                      = (known after apply)
+      + minimum_bandwidth_mode                  = "None"
+      + name                                    = "DMZ"
+      + net_adapter_names                       = [
+          + "LAN",
+        ]
+      + switch_type                             = "Internal"
+    }
+
+  # hyperv_vhd.PrimaryControlNode-vhd will be created
+  + resource "hyperv_vhd" "PrimaryControlNode-vhd" {
+      + block_size           = (known after apply)
+      + exists               = (known after apply)
+      + id                   = (known after apply)
+      + logical_sector_size  = (known after apply)
+      + path                 = "A:\\PrimaryControlNode\\PrimaryControlNode.vhdx"
+      + physical_sector_size = (known after apply)
+      + size                 = 60737421312
+      + vhd_type             = "Dynamic"
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+╷
+│ Error: Archive creation error
+│
+│   with data.archive_file.bootstrap,
+│   on tofu-vm-example.tf line 2, in data "archive_file" "bootstrap":
+│    2: data "archive_file" "bootstrap" {
+│
+│ error creating archive: error archiving directory: could not archive missing directory: C:\Users\alexa\OneDrive\0. Lab\opentofu\my-infra\bootstrap
+╵
+╷
+│ Error: Archive creation error
+│
+│   with data.archive_file.Win11_23H2_English_x64v2,
+│   on tofu-vm-example.tf line 19, in data "archive_file" "Win11_23H2_English_x64v2":
+│   19: data "archive_file" "Win11_23H2_English_x64v2" {
+│
+│ error creating archive: error archiving directory: could not archive missing directory: E:\Data\Win11_23H2_English_x64v2
